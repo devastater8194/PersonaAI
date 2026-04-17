@@ -1,5 +1,3 @@
-"""Content generation API routes."""
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
@@ -27,13 +25,9 @@ class GenerateResponse(BaseModel):
 
 @router.post("/", response_model=List[GenerateResponse])
 async def generate_content(req: GenerateRequest):
-    """
-    Generate platform-native content using identity context.
-    This is the core engine of Persona.
-    """
+
     db = get_db()
 
-    # 1. Load user identity
     identity_result = db.table("identities").select("*").eq("user_id", req.user_id).single().execute()
     if not identity_result.data:
         raise HTTPException(status_code=404, detail="Identity not found. Save your profile first.")
@@ -41,7 +35,6 @@ async def generate_content(req: GenerateRequest):
     identity = identity_result.data
     system_prompt = build_identity_system_prompt(identity)
 
-    # 2. Determine platforms to generate for
     platforms = ["linkedin", "instagram", "twitter"] if req.platform == "all" else [req.platform]
     results = []
 
@@ -73,18 +66,14 @@ Remember: Sound exactly like {identity.get('name')}. Reference my background nat
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"LLM error: {str(e)}")
 
-        # 3. Parse carousel JSON if Instagram
         carousel_slides = None
         if platform == "instagram":
             try:
-                # Strip markdown code fences if present
                 clean = content.strip().replace("```json", "").replace("```", "").strip()
                 carousel_slides = json.loads(clean)
             except json.JSONDecodeError:
-                # If JSON parsing fails, keep raw content
                 carousel_slides = None
 
-        # 4. Save draft to Supabase
         draft_data = {
             "user_id":       req.user_id,
             "platform":      platform,
@@ -128,7 +117,6 @@ async def approve_draft(draft_id: str):
 
 @router.delete("/draft/{draft_id}")
 async def delete_draft(draft_id: str):
-    """Delete a draft."""
     db = get_db()
     db.table("content_drafts").delete().eq("id", draft_id).execute()
     return {"success": True}
