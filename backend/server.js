@@ -1,24 +1,3 @@
-/**
- * ╔══════════════════════════════════════════════════════════════╗
- * ║  CAROUSEL RENDERING SERVICE                                   ║
- * ║  Express + Puppeteer → renders HTML slides to PNG images     ║
- * ║                                                              ║
- * ║  HOW TO RUN:                                                 ║
- * ║    cd carousel-service                                        ║
- * ║    npm install                                                ║
- * ║    node server.js                                             ║
- * ║  Runs on http://localhost:3001                                ║
- * ║                                                              ║
- * ║  OUTPUTS: PNG images uploaded to Supabase Storage            ║
- * ║  (returns public URLs for Instagram Graph API)               ║
- * ║                                                              ║
- * ║  SUPABASE STORAGE SETUP:                                     ║
- * ║    1. Supabase dashboard → Storage → New bucket "carousels"  ║
- * ║    2. Set bucket to Public                                   ║
- * ║    3. Set SUPABASE_URL and SUPABASE_SERVICE_KEY in .env      ║
- * ╚══════════════════════════════════════════════════════════════╝
- */
-
 const express = require("express");
 const puppeteer = require("puppeteer");
 const { createClient } = require("@supabase/supabase-js");
@@ -27,21 +6,13 @@ require("dotenv").config({ path: "../backend/.env" });
 
 const app = express();
 app.use(express.json());
-
-// 🔧 Supabase client for storage upload
 const supabase = createClient(
-  process.env.SUPABASE_URL,        // same as backend .env
-  process.env.SUPABASE_SERVICE_KEY // use SERVICE key (not anon) for storage writes
-  //   get from: Supabase → Project Settings → API → service_role key
+  process.env.SUPABASE_URL,        
+  process.env.SUPABASE_SERVICE_KEY  
 );
 
-const SLIDE_WIDTH  = 1080; // Instagram square
+const SLIDE_WIDTH  = 1080; 
 const SLIDE_HEIGHT = 1080;
-
-/**
- * Build HTML for a single carousel slide.
- * Customize this template for your branding.
- */
 function buildSlideHTML(slide, index, total, theme = "dark") {
   const bg    = theme === "dark"  ? "#0d0d14" : "#ffffff";
   const text  = theme === "dark"  ? "#e8e9ec" : "#0d0d14";
@@ -145,12 +116,6 @@ function buildSlideHTML(slide, index, total, theme = "dark") {
 </html>`;
 }
 
-
-/**
- * POST /render
- * Body: { slides: [{title, body, emoji}], theme: "dark"|"light" }
- * Returns: { image_urls: ["https://...supabase.co/storage/..."] }
- */
 app.post("/render", async (req, res) => {
   const { slides, theme = "dark" } = req.body;
 
@@ -177,8 +142,6 @@ app.post("/render", async (req, res) => {
       const screenshot = await page.screenshot({ type: "png" });
       await page.close();
 
-      // Upload to Supabase Storage
-      // 🔧 Make sure you have a "carousels" bucket in Supabase Storage (set to public)
       const filePath = `${sessionId}/slide-${i + 1}.png`;
       const { data, error } = await supabase.storage
         .from("carousels")
@@ -189,7 +152,6 @@ app.post("/render", async (req, res) => {
         continue;
       }
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from("carousels")
         .getPublicUrl(filePath);
