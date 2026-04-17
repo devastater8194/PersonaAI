@@ -1,5 +1,3 @@
-"""Trends API routes — snscrape + HackerNews + Dev.to + Google News + Newsdata.io."""
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
@@ -12,7 +10,7 @@ router = APIRouter()
 
 class TrendAlertRequest(BaseModel):
     user_id: str
-    fcm_token: Optional[str] = None   # Firebase device token from frontend
+    fcm_token: Optional[str] = None   
     email: Optional[str] = None
 
 
@@ -62,7 +60,7 @@ async def send_trend_alert(req: TrendAlertRequest, trend_title: str, trend_sourc
     if req.fcm_token:
         await send_push_notification(
             fcm_token=req.fcm_token,
-            title="🔥 Trending in your niche!",
+            title=" Trending in your niche!",
             body=trend_title[:100],
             data={"type": "trend_alert", "source": trend_source}
         )
