@@ -1,7 +1,3 @@
-"""
-Auth API routes — registration + login via Supabase Auth.
-"""
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from supabase_client import get_db
@@ -23,9 +19,7 @@ class LoginPayload(BaseModel):
 
 @router.post("/register")
 async def register(payload: RegisterPayload):
-    """
-    Register a new user via Supabase Auth, then create an identity row.
-    """
+
     try:
         from supabase import create_client
         url = os.getenv("SUPABASE_URL")
@@ -36,7 +30,6 @@ async def register(payload: RegisterPayload):
         
         supabase = create_client(url, key)
         
-        # 1. Create auth user
         auth_response = supabase.auth.sign_up({
             "email": payload.email,
             "password": payload.password,
@@ -51,8 +44,7 @@ async def register(payload: RegisterPayload):
             raise HTTPException(status_code=400, detail="Registration failed — check email/password")
 
         user_id = auth_response.user.id
-
-        # 2. Create identity row 
+ 
         try:
             db = get_db()
             db.table("identities").upsert({
@@ -61,7 +53,7 @@ async def register(payload: RegisterPayload):
                 "embedding": [0.0] * 1536,
             }, on_conflict="user_id").execute()
         except Exception as e:
-            print(f"⚠️  Identity row creation failed (non-fatal): {e}")
+            print(f"  Identity row creation failed (non-fatal): {e}")
 
         return {
             "success": True,
