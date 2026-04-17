@@ -1,5 +1,3 @@
-"""Identity API routes — save and retrieve user profile."""
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
@@ -10,7 +8,7 @@ router = APIRouter()
 
 
 class IdentityPayload(BaseModel):
-    user_id: str          # for now use any string; wire to auth later
+    user_id: str    
     name: str
     age: Optional[int] = None
     domain: Optional[str] = ""
@@ -26,19 +24,13 @@ class IdentityPayload(BaseModel):
 
 @router.post("/save")
 async def save_identity(payload: IdentityPayload):
-    """
-    Save or update user identity profile.
-    Also generates and stores embedding for semantic retrieval.
-    """
     db = get_db()
-
-    # Build text for embedding (captures the full persona)
     embed_text = f"{payload.name} {payload.domain} {payload.role} {payload.journey} {payload.interests}"
 
     try:
         embedding = await get_embedding(embed_text)
     except Exception as e:
-        print(f"⚠️  Embedding failed (non-fatal): {e}")
+        print(f"  Embedding failed (non-fatal): {e}")
         embedding = [0.0] * 1536
 
     data = {
@@ -57,7 +49,6 @@ async def save_identity(payload: IdentityPayload):
         "embedding":    embedding,
     }
 
-    # Upsert (insert or update if user_id exists)
     result = db.table("identities").upsert(data, on_conflict="user_id").execute()
 
     return {"success": True, "message": "Identity saved", "data": result.data}
