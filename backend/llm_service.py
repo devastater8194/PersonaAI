@@ -1,28 +1,10 @@
-"""
-╔══════════════════════════════════════════════════════════════╗
-║  LLM SERVICE — OpenAI OR Ollama                              ║
-║                                                              ║
-║  .env controls which one to use:                             ║
-║    USE_OLLAMA=false  → uses OpenAI gpt-4o-mini              ║
-║    USE_OLLAMA=true   → uses Ollama locally (llama3, etc.)   ║
-║                                                              ║
-║  FOR OPENAI:                                                 ║
-║    Get key at https://platform.openai.com/api-keys          ║
-║    Set OPENAI_API_KEY=sk-... in .env                         ║
-║                                                              ║
-║  FOR OLLAMA (local, free):                                   ║
-║    Install: https://ollama.ai                                ║
-║    Run: ollama pull llama3                                   ║
-║    Set USE_OLLAMA=true, OLLAMA_BASE_URL=http://localhost:11434║
-╚══════════════════════════════════════════════════════════════╝
-"""
 import os
 import httpx
 from openai import AsyncOpenAI
 from typing import Optional
 
 from dotenv import load_dotenv
-load_dotenv()  # ← This MUST come before os.getenv(...)
+load_dotenv()  
 
 openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -41,7 +23,6 @@ def build_identity_system_prompt(identity: dict) -> str:
     tones = ", ".join(identity.get("tones", []))
     return f"""You are a personal AI content engine for {identity.get('name', 'the user')}.
 
-═══════════════ IDENTITY PROFILE ═══════════════
 Name        : {identity.get('name')}
 Age         : {identity.get('age')}
 Domain      : {identity.get('domain')}
@@ -81,9 +62,6 @@ async def generate_with_llm(
     max_tokens: int = 1000,
     temperature: float = 0.85
 ) -> str:
-    """
-    Main LLM call — routes to Ollama or OpenAI based on env config.
-    """
     if USE_OLLAMA:
         return await _call_ollama(system_prompt, user_prompt, max_tokens, temperature)
     else:
@@ -94,8 +72,8 @@ async def _call_openai(system_prompt, user_prompt, max_tokens, temperature) -> s
     """Call OpenAI API."""
     if not os.getenv("OPENAI_API_KEY"):
         raise ValueError(
-            "❌ OPENAI_API_KEY not set in .env\n"
-            "   Get your key at: https://platform.openai.com/api-keys"
+            " OPENAI_API_KEY not set in .env\n"
+             
         )
 
     response = await openai_client.chat.completions.create(
@@ -133,17 +111,8 @@ async def _call_ollama(system_prompt, user_prompt, max_tokens, temperature) -> s
 
 
 async def get_embedding(text: str) -> list[float]:
-    """
-    Get text embedding for semantic similarity (identity vector storage in pgvector).
-    Only works with OpenAI — Ollama embeddings optional.
-    """
     if USE_OLLAMA:
-        # 🔧 Optional: use Ollama's embedding endpoint if you want local embeddings
-        # async with httpx.AsyncClient() as client:
-        #     r = await client.post(f"{OLLAMA_BASE_URL}/api/embeddings",
-        #                           json={"model": "nomic-embed-text", "prompt": text})
-        #     return r.json()["embedding"]
-        return [0.0] * 1536  # placeholder if not using embeddings with Ollama
+        return [0.0] * 1536  
 
     response = await openai_client.embeddings.create(
         model="text-embedding-3-small",
