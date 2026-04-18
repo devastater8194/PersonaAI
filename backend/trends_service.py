@@ -1,39 +1,9 @@
-"""
-╔══════════════════════════════════════════════════════════════╗
-║  TRENDS SERVICE — Zero-Reddit, All Free Sources              ║
-║                                                              ║
-║  Sources (ALL FREE, no paid API key needed):                 ║
-║                                                              ║
-║  1. snscrape — scrapes X/Twitter posts (no key needed)       ║
-║     pip install snscrape                                     ║
-║                                                              ║
-║  2. Hacker News — official free JSON API                     ║
-║     https://hacker-news.firebaseio.com  (no key needed)      ║
-║                                                              ║
-║  3. Dev.to — free public REST API                            ║
-║     https://dev.to/api  (no key needed for reading)          ║
-║                                                              ║
-║  4. Google News RSS — public feed                            ║
-║     https://news.google.com/rss  (no key needed)             ║
-║                                                              ║
-║  5. Newsdata.io — free tier (200 req/day) OPTIONAL           ║
-║     https://newsdata.io → sign up → copy API key             ║
-║     Set NEWSDATA_API_KEY=pub_... in backend/.env             ║
-╚══════════════════════════════════════════════════════════════╝
-"""
-
 import os
 import asyncio
 import feedparser
 import httpx
 from typing import List, Dict
-
-# 🔧 OPTIONAL: Newsdata.io free tier (200 req/day)
-# Sign up at https://newsdata.io → copy your API key (starts with pub_...)
-# Leave blank to skip this source — all others work with zero keys
 NEWSDATA_API_KEY = os.getenv("NEWSDATA_API_KEY", "")
-
-# Keywords per domain — used to filter HN, Dev.to and X results
 DOMAIN_KEYWORDS: Dict[str, List[str]] = {
     "ai":         ["AI", "machine learning", "LLM", "GPT", "artificial intelligence"],
     "saas":       ["SaaS", "startup", "product", "B2B", "software"],
@@ -57,19 +27,7 @@ def get_keywords_for_domain(domain: str) -> List[str]:
     extra = [w.strip() for w in domain.replace("/", " ").split() if len(w) > 2]
     return DOMAIN_KEYWORDS["default"] + extra[:3]
 
-
-# ─────────────────────────────────────────────────────────────
-# SOURCE 1: snscrape — X/Twitter (no API key)
-# ─────────────────────────────────────────────────────────────
-
 async def fetch_twitter_snscrape(domain: str, limit: int = 8) -> List[Dict]:
-    """
-    Uses snscrape to scrape trending tweets — no Twitter API key needed.
-    Runs in a thread executor since snscrape is synchronous.
-
-    Install: pip install snscrape
-    Docs:    https://github.com/JustAnotherArchivist/snscrape
-    """
     try:
         import snscrape.modules.twitter as sntwitter
 
@@ -96,16 +54,11 @@ async def fetch_twitter_snscrape(domain: str, limit: int = 8) -> List[Dict]:
         return await loop.run_in_executor(None, _scrape)
 
     except ImportError:
-        print("⚠️  snscrape not installed — run: pip install snscrape")
+        print("  snscrape not installed — run: pip install snscrape")
         return []
     except Exception as e:
-        print(f"⚠️  snscrape fetch failed: {e}")
+        print(f"  snscrape fetch failed: {e}")
         return []
-
-
-# ─────────────────────────────────────────────────────────────
-# SOURCE 2: Hacker News — official free JSON API, no key
-# ─────────────────────────────────────────────────────────────
 
 async def fetch_hackernews(domain: str, limit: int = 8) -> List[Dict]:
     """
@@ -152,20 +105,9 @@ async def fetch_hackernews(domain: str, limit: int = 8) -> List[Dict]:
         return trends
 
     except Exception as e:
-        print(f"⚠️  Hacker News fetch failed: {e}")
+        print(f"  Hacker News fetch failed: {e}")
         return []
-
-
-# ─────────────────────────────────────────────────────────────
-# SOURCE 3: Dev.to — free public API, no key needed
-# ─────────────────────────────────────────────────────────────
-
 async def fetch_devto(domain: str, limit: int = 6) -> List[Dict]:
-    """
-    Fetches trending articles from Dev.to public API.
-    No API key needed.
-    API docs: https://developers.forem.com/api
-    """
     keywords = get_keywords_for_domain(domain)
     tag = keywords[0].lower().replace(" ", "")
 
@@ -194,19 +136,10 @@ async def fetch_devto(domain: str, limit: int = 6) -> List[Dict]:
             return trends
 
     except Exception as e:
-        print(f"⚠️  Dev.to fetch failed: {e}")
+        print(f"  Dev.to fetch failed: {e}")
         return []
 
-
-# ─────────────────────────────────────────────────────────────
-# SOURCE 4: Google News RSS — no key needed
-# ─────────────────────────────────────────────────────────────
-
 async def fetch_google_news(query: str, limit: int = 8) -> List[Dict]:
-    """
-    Fetches from Google News public RSS feed.
-    No API key needed. Works for any topic query.
-    """
     safe_query = query.replace(" ", "+").replace("/", "+")
     url = f"https://news.google.com/rss/search?q={safe_query}&hl=en-IN&gl=IN&ceid=IN:en"
 
@@ -228,24 +161,10 @@ async def fetch_google_news(query: str, limit: int = 8) -> List[Dict]:
         return trends
 
     except Exception as e:
-        print(f"⚠️  Google News fetch failed: {e}")
+        print(f"  Google News fetch failed: {e}")
         return []
 
-
-# ─────────────────────────────────────────────────────────────
-# SOURCE 5: Newsdata.io — free tier, 200 req/day (OPTIONAL)
-# ─────────────────────────────────────────────────────────────
-
 async def fetch_newsdata(query: str, limit: int = 6) -> List[Dict]:
-    """
-    Fetches from Newsdata.io free tier (200 requests/day).
-    OPTIONAL — only activates if NEWSDATA_API_KEY is set in .env.
-
-    To enable:
-      1. Sign up free at https://newsdata.io
-      2. Copy your API key (starts with pub_...)
-      3. Add NEWSDATA_API_KEY=pub_... to backend/.env
-    """
     if not NEWSDATA_API_KEY:
         return []
 
@@ -262,7 +181,7 @@ async def fetch_newsdata(query: str, limit: int = 6) -> List[Dict]:
             )
             data = resp.json()
             if data.get("status") != "success":
-                print(f"⚠️  Newsdata.io error: {data.get('message', 'unknown')}")
+                print(f" Newsdata.io error: {data.get('message', 'unknown')}")
                 return []
 
             trends = []
@@ -278,20 +197,9 @@ async def fetch_newsdata(query: str, limit: int = 6) -> List[Dict]:
             return trends
 
     except Exception as e:
-        print(f"⚠️  Newsdata.io fetch failed: {e}")
+        print(f" Newsdata.io fetch failed: {e}")
         return []
-
-
-# ─────────────────────────────────────────────────────────────
-# MASTER FETCH
-# ─────────────────────────────────────────────────────────────
-
 async def fetch_all_trends(domain: str, interests: str = "") -> List[Dict]:
-    """
-    Fetches from all free sources concurrently, merges,
-    deduplicates and sorts by relevance + engagement score.
-    Called by /api/trends/{user_id}.
-    """
     query = f"{domain} {interests}".strip()
 
     results = await asyncio.gather(
