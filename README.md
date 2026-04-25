@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🟣 Persona — AI Content Engine
 
 Identity-first AI content engine. Knows **who you are**, not just what you post.
@@ -166,3 +167,6 @@ node server.js
 - [ ] LinkedIn API posting (requires app review)
 - [ ] Voice cloning for video content
 - [ ] Multi-user / agency mode
+=======
+# PersonaAI
+>>>>>>> 3550e4025e2ea1d825a4f61847e1207ce320f2cc

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+<<<<<<< HEAD
 import { Manrope, Outfit } from "next/font/google";
 import "./globals.css";
 
@@ -9,6 +10,18 @@ const manrope = Manrope({
 
 const outfit = Outfit({
   variable: "--font-outfit",
+=======
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import "./globals.css";
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta",
+>>>>>>> 3550e4025e2ea1d825a4f61847e1207ce320f2cc
   subsets: ["latin"],
 });
 
@@ -25,7 +38,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+<<<<<<< HEAD
       className={`${manrope.variable} ${outfit.variable} h-full antialiased`}
+=======
+      className={`${inter.variable} ${plusJakarta.variable} h-full antialiased`}
+>>>>>>> 3550e4025e2ea1d825a4f61847e1207ce320f2cc
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
