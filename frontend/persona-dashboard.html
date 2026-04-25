@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Persona — AI Content Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --accent: #7c6cff;
+  --accent-dim: rgba(124,108,255,0.15);
+  --accent-border: rgba(124,108,255,0.3);
+  --bg: #08090a;
+  --bg2: #0f1014;
+  --bg3: #16181c;
+  --bg4: #1e2128;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e8e9ec;
+  --muted: #6b7280;
+  --muted2: #9ca3af;
+  --green: #10b981;
+  --red: #ef4444;
+  --sidebar-w: 240px;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ═══════════════════════════════════════════════
+   PRISM CANVAS (shared bg for all views)
+═══════════════════════════════════════════════ */
+#prism-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════
+   LANDING PAGE
+═══════════════════════════════════════════════ */
+#landing-page {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 48px;
+  background: rgba(8,9,10,0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+.nav-logo .dot { color: var(--accent); }
+.nav-links {
+  display: flex;
+  gap: 28px;
+  list-style: none;
+}
+.nav-links a {
+  color: var(--muted2);
+  font-size: 14px;
+  text-decoration: none;
+  transition: color .2s;
+  cursor: pointer;
+}
+.nav-links a:hover { color: var(--text); }
+.nav-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.nav-login {
+  background: transparent;
+  color: var(--muted2);
+  border: 1px solid var(--border2);
+  padding: 9px 20px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+}
+.nav-login:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+.nav-cta {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity .2s, transform .2s;
+}
+.nav-cta:hover { opacity: .85; transform: translateY(-1px); }
+
+.hero {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 24px 80px;
+  text-align: center;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  color: #a89fff;
+  font-size: 11px;
+  font-family: 'Syne', sans-serif;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  padding: 6px 18px;
+  border-radius: 100px;
+  margin-bottom: 36px;
+  opacity: 0;
+  animation: fadeUp .8s .2s forwards;
+}
+.hero-badge::before { content: '◈'; font-size: 10px; }
+.hero-title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(44px, 7.5vw, 100px);
+  font-weight: 800;
+  line-height: 1.0;
+  letter-spacing: -3px;
+  margin-bottom: 28px;
+}
+.hero-title .line { display: block; overflow: hidden; }
+.hero-title .line .inner {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(70px);
+  animation: slideUp .95s cubic-bezier(.16,1,.3,1) forwards;
+}
+.hero-title .line:nth-child(1) .inner { animation-delay: .3s; }
+.hero-title .line:nth-child(2) .inner { animation-delay: .46s; }
+.hero-title .line:nth-child(3) .inner { animation-delay: .62s; }
+.accent { color: var(--accent); }
+.hero-sub {
+  font-size: 18px;
+  color: var(--muted2);
+  max-width: 540px;
+  line-height: 1.75;
+  margin-bottom: 48px;
+  opacity: 0;
+  animation: fadeUp .8s .85s forwards;
+}
+.hero-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  opacity: 0;
+  animation: fadeUp .8s 1.05s forwards;
+}
+.hero-stats {
+  display: flex;
+  gap: 32px;
+  margin-top: 64px;
+  opacity: 0;
+  animation: fadeUp .8s 1.2s forwards;
+}
+.stat { text-align: center; }
+.stat-num { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: var(--text); }
+.stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.hero-scroll {
+  position: absolute;
+  bottom: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: fadeUp .8s 1.5s forwards;
+}
+.scroll-line { width: 1px; height: 40px; background: linear-gradient(var(--accent), transparent); }
+
+.how {
+  padding: 100px 48px;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+.section-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+.section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(30px, 4vw, 54px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -1.5px;
+  margin-bottom: 60px;
+  color: var(--text);
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.step {
+  background: var(--bg2);
+  padding: 40px 32px;
+  transition: background .3s;
+}
+.step:hover { background: var(--bg3); }
+.step-num { font-family: 'Syne', sans-serif; font-size: 11px; color: var(--accent); letter-spacing: 2px; margin-bottom: 24px; font-weight: 700; }
+.step-icon { font-size: 32px; margin-bottom: 18px; display: block; }
+.step h3 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 12px; color: var(--text); }
+.step p { font-size: 14px; color: var(--muted2); line-height: 1.65; }
+
+.features {
+  padding: 80px 48px;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.feature-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  transition: border-color .3s, transform .3s;
+}
+.feature-card:hover { border-color: var(--accent-border); transform: translateY(-3px); }
+.feature-icon { width: 44px; height: 44px; background: var(--accent-dim); border: 1px solid var(--accent-border); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 20px; }
+.feature-card h3 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+.feature-card p { font-size: 14px; color: var(--muted2); line-height: 1.65; }
+
+footer {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--border);
+  padding: 40px 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 13px;
+}
+.footer-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: var(--text); }
+.footer-logo span { color: var(--accent); }
+.divider { border: none; height: 1px; background: var(--border); margin: 0; }
+
+/* ═══════════════════════════════════════════════
+   AUTH MODAL
+═══════════════════════════════════════════════ */
+#auth-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  align-items: center;
+  justify-content: center;
+}
+#auth-overlay.open { display: flex; }
+.auth-modal {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 440px;
+  position: relative;
+  animation: scaleIn .35s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(.94) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.auth-modal-close {
+  position: absolute;
+  top: 16px; right: 20px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+  transition: color .2s;
+}
+.auth-modal-close:hover { color: var(--text); }
+.auth-logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.auth-logo span { color: var(--accent); }
+.auth-sub { font-size: 14px; color: var(--muted2); margin-bottom: 32px; }
+.auth-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg3);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 28px;
+}
+.auth-tab {
+  flex: 1;
+  padding: 9px;
+  border: none;
+  background: transparent;
+  color: var(--muted2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 7px;
+  transition: all .2s;
+}
+.auth-tab.active { background: var(--bg4); color: var(--text); font-weight: 500; }
+.auth-form { display: flex; flex-direction: column; gap: 14px; }
+.auth-form input {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  width: 100%;
+  transition: border-color .2s;
+}
+.auth-form input:focus { border-color: var(--accent); }
+.auth-form input::placeholder { color: var(--muted); }
+.auth-submit {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 13px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: opacity .2s, transform .2s;
+  margin-top: 4px;
+}
+.auth-submit:hover { opacity: .88; transform: translateY(-1px); }
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  margin: 4px 0;
+}
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.auth-footer { text-align: center; font-size: 13px; color: var(--muted); margin-top: 16px; }
+.auth-footer a { color: var(--accent); cursor: pointer; text-decoration: none; }
+.auth-footer a:hover { text-decoration: underline; }
+
+/* ═══════════════════════════════════════════════
+   DASHBOARD LAYOUT
+═══════════════════════════════════════════════ */
+#dashboard-page {
+  display: none;
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+#dashboard-page.active { display: flex; }
+
+/* SIDEBAR */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: rgba(8,9,10,0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-right: 1px solid var(--border);
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 24px 24px 16px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sidebar-logo .dot { color: var(--accent); }
+.sidebar-section-label {
+  padding: 20px 24px 8px;
+  font-size: 10px;
+  font-family: 'Syne', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sidebar-nav { flex: 1; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; }
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--muted2);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all .2s;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font-family: 'DM Sans', sans-serif;
+}
+.sidebar-item:hover { background: var(--bg3); color: var(--text); }
+.sidebar-item.active { background: var(--accent-dim); color: #a89fff; border: 1px solid var(--accent-border); }
+.sidebar-item .s-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+.sidebar-item .s-badge {
+  margin-left: auto;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 100px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+}
+.sidebar-footer {
+  padding: 16px 12px;
+  border-top: 1px solid var(--border);
+}
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.sidebar-user:hover { background: var(--bg3); }
+.sidebar-avatar {
+  width: 32px; height: 32px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.sidebar-user-info { flex: 1; min-width: 0; }
+.sidebar-user-name { font-size: 13px; font-weight: 500; color: var(--text); truncate: ellipsis; white-space: nowrap; overflow: hidden; }
+.sidebar-user-role { font-size: 11px; color: var(--muted); }
+.sidebar-logout {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  transition: color .2s;
+  flex-shrink: 0;
+}
+.sidebar-logout:hover { color: var(--red); }
+
+/* MAIN CONTENT */
+.dash-main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.dash-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(8,9,10,0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dash-topbar-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -.5px;
+}
+.dash-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.topbar-user-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--muted2);
+}
+
+.dash-body {
+  flex: 1;
+  padding: 32px;
+  overflow-y: auto;
+}
+
+/* DASHBOARD PANELS */
+.dash-panel { display: none; }
+.dash-panel.active { display: block; }
+
+/* ═══════════════════════════════════════════════
+   ALL ORIGINAL APP STYLES (preserved)
+═══════════════════════════════════════════════ */
+.status-bar {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+  font-size: 14px;
+  color: var(--muted2);
+}
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+  animation: pulse 2s infinite;
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 8px; }
+.form-group.full { grid-column: 1 / -1; }
+label { font-size: 12px; color: var(--muted2); letter-spacing: .4px; font-family: 'Syne', sans-serif; font-weight: 600; }
+input, textarea, select {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 11px 16px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  transition: border-color .2s, background .2s;
+  outline: none;
+  width: 100%;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--accent); background: var(--bg4); }
+input::placeholder, textarea::placeholder { color: var(--muted); }
+textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+select { cursor: pointer; }
+select option { background: var(--bg3); }
+
+.tone-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.tone-pill {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--muted2);
+  padding: 7px 18px;
+  border-radius: 100px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .2s;
+  user-select: none;
+  font-family: 'DM Sans', sans-serif;
+}
+.tone-pill:hover { border-color: var(--border2); color: var(--text); }
+.tone-pill.active { background: var(--accent-dim); border-color: var(--accent); color: #a89fff; }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 13px 28px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: transform .2s, opacity .2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+.btn-primary:active { transform: scale(.98); }
+.btn-outline {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border2);
+  padding: 13px 28px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: border-color .2s, background .2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-outline:hover { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.04); }
+.btn-sm { padding: 7px 16px; font-size: 13px; border-radius: 8px; }
+
+.gen-controls { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+
+.drafts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 8px; }
+.draft-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  transition: border-color .3s, transform .25s;
+}
+.draft-card:hover { border-color: var(--accent-border); transform: translateY(-2px); }
+.draft-platform { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-dim); border: 1px solid var(--accent-border); color: #a89fff; font-size: 10px; font-family: 'Syne', sans-serif; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 12px; border-radius: 100px; margin-bottom: 16px; }
+.draft-status-badge { display: inline-flex; align-items: center; font-size: 10px; font-family: 'Syne', sans-serif; letter-spacing: 1px; text-transform: uppercase; padding: 3px 10px; border-radius: 100px; margin-left: 8px; }
+.draft-status-badge.approved { background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+.draft-status-badge.scheduled { background: rgba(124,108,255,0.1); color: #a89fff; border: 1px solid var(--accent-border); }
+.draft-status-badge.posted { background: rgba(156,163,175,0.1); color: var(--muted2); border: 1px solid var(--border); }
+.draft-topic { font-size: 12px; color: var(--muted); margin-bottom: 10px; font-family: 'Syne', sans-serif; }
+.draft-content { font-size: 14px; color: var(--muted2); line-height: 1.7; margin-bottom: 20px; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+.draft-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-approve { background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.2); padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background .2s; }
+.btn-approve:hover { background: rgba(16,185,129,0.2); }
+.btn-delete { background: rgba(239,68,68,0.1); color: var(--red); border: 1px solid rgba(239,68,68,0.2); padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background .2s; }
+.btn-delete:hover { background: rgba(239,68,68,0.2); }
+.btn-schedule { background: var(--bg3); color: var(--muted2); border: 1px solid var(--border); padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .2s; }
+.btn-schedule:hover { border-color: var(--accent-border); color: #a89fff; }
+
+.carousel-preview { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 16px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.carousel-slide { flex-shrink: 0; width: 160px; height: 160px; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 6px; }
+.slide-emoji { font-size: 24px; }
+.slide-title { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; line-height: 1.3; }
+.slide-body { font-size: 10px; color: var(--muted2); line-height: 1.5; }
+
+.trend-item { display: flex; align-items: center; gap: 16px; padding: 18px 16px; border-radius: 10px; border-bottom: 1px solid var(--border); transition: background .2s; cursor: default; }
+.trend-item:hover { background: var(--bg3); }
+.trend-item:last-child { border-bottom: none; }
+.trend-source { font-size: 10px; font-family: 'Syne', sans-serif; letter-spacing: 1.5px; color: var(--accent); text-transform: uppercase; min-width: 90px; flex-shrink: 0; }
+.trend-title { font-size: 14px; flex: 1; line-height: 1.5; color: var(--text); }
+.trend-score { font-size: 12px; color: var(--muted); font-family: 'Courier New', monospace; flex-shrink: 0; }
+.use-trend-btn { background: var(--accent-dim); border: 1px solid var(--accent-border); color: #a89fff; padding: 7px 16px; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; transition: background .2s; flex-shrink: 0; }
+.use-trend-btn:hover { background: rgba(124,108,255,0.25); }
+
+.cal-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 8px; }
+.cal-header-day { text-align: center; font-size: 11px; color: var(--muted); font-family: 'Syne', sans-serif; letter-spacing: 1.5px; text-transform: uppercase; padding: 8px 0; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.cal-day { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 12px; min-height: 130px; transition: border-color .2s; }
+.cal-day.today { border-color: var(--accent-border); }
+.cal-day-label { font-size: 12px; color: var(--muted); margin-bottom: 12px; font-family: 'Syne', sans-serif; }
+.cal-day.today .cal-day-label { color: var(--accent); }
+.cal-post { background: var(--accent-dim); border: 1px solid var(--accent-border); border-radius: 6px; padding: 6px 9px; margin-bottom: 6px; }
+.cal-post-platform { font-size: 9px; color: var(--accent); font-family: 'Syne', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
+.cal-post-time { font-size: 11px; color: var(--muted2); margin-top: 2px; }
+.cal-empty { font-size: 12px; color: var(--muted); text-align: center; margin-top: 16px; }
+
+.loading { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--muted2); font-size: 14px; padding: 48px 24px; }
+.spinner { width: 18px; height: 18px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════════
+   TRACKER PANEL
+═══════════════════════════════════════════════ */
+.tracker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.tracker-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  transition: border-color .3s;
+}
+.tracker-card:hover { border-color: var(--accent-border); }
+.tracker-card-label { font-size: 11px; font-family: 'Syne', sans-serif; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.tracker-card-val { font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800; color: var(--text); }
+.tracker-card-sub { font-size: 12px; color: var(--muted2); margin-top: 4px; }
+.tracker-card-delta { font-size: 12px; font-weight: 500; margin-top: 6px; }
+.tracker-card-delta.up { color: var(--green); }
+.tracker-card-delta.down { color: var(--red); }
+
+.chart-wrap {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px;
+  margin-bottom: 20px;
+}
+.chart-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.3px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.chart-legend { display: flex; gap: 18px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted2); }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+.bar-chart { display: flex; align-items: flex-end; gap: 10px; height: 200px; padding-bottom: 32px; position: relative; }
+.bar-chart::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 32px;
+  height: 1px;
+  background: var(--border);
+}
+.bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.bar-stack { display: flex; flex-direction: column-reverse; gap: 2px; width: 100%; align-items: stretch; }
+.bar-seg {
+  border-radius: 3px;
+  transition: height .6s cubic-bezier(.16,1,.3,1), opacity .3s;
+  min-height: 0;
+}
+.bar-seg:hover { opacity: .8; }
+.bar-label { font-size: 10px; color: var(--muted); font-family: 'Syne', sans-serif; margin-top: 8px; text-align: center; white-space: nowrap; }
+.bar-val { font-size: 11px; color: var(--muted2); font-family: 'Syne', sans-serif; font-weight: 700; }
+
+.platform-breakdown {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.platform-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: border-color .3s;
+}
+.platform-card:hover { border-color: var(--accent-border); }
+.platform-icon-wrap {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.platform-icon-wrap.linkedin { background: rgba(10,102,194,0.15); border: 1px solid rgba(10,102,194,0.3); }
+.platform-icon-wrap.instagram { background: rgba(225,48,108,0.12); border: 1px solid rgba(225,48,108,0.25); }
+.platform-icon-wrap.twitter { background: rgba(255,255,255,0.07); border: 1px solid var(--border2); }
+.platform-stat-label { font-size: 11px; color: var(--muted); font-family: 'Syne', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
+.platform-stat-val { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--text); }
+
+/* TOAST */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  z-index: 9999;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  transform: translateY(120px);
+  opacity: 0;
+  transition: all .42s cubic-bezier(.16,1,.3,1);
+  max-width: 340px;
+  pointer-events: none;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* PANEL HEADER */
+.panel-header { margin-bottom: 28px; }
+.panel-header .section-label { margin-bottom: 6px; }
+.panel-header h2 { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -.8px; }
+.panel-header p { font-size: 14px; color: var(--muted2); margin-top: 6px; }
+.panel-actions { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+
+/* ANIMATIONS */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(70px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+.reveal { opacity: 0; transform: translateY(32px); transition: opacity .75s ease, transform .75s cubic-bezier(.16,1,.3,1); }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal-delay-1 { transition-delay: .1s; }
+.reveal-delay-2 { transition-delay: .2s; }
+.reveal-delay-3 { transition-delay: .3s; }
+.split-word-outer { display: inline-block; overflow: hidden; margin-right: .22em; vertical-align: bottom; }
+.split-word-inner { display: inline-block; transition: opacity .65s, transform .65s cubic-bezier(.16,1,.3,1); }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+@media (max-width: 1100px) {
+  .tracker-grid { grid-template-columns: repeat(2, 1fr); }
+  .platform-breakdown { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  nav { padding: 16px 24px; }
+  .nav-links { display: none; }
+  .sidebar { transform: translateX(-100%); }
+  .dash-main { margin-left: 0; }
+  .feature-grid { grid-template-columns: 1fr 1fr; }
+  .gen-controls { grid-template-columns: 1fr 1fr; }
+  .gen-controls .form-group:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .feature-grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+  .cal-grid { grid-template-columns: repeat(4, 1fr); }
+  .hero-stats { flex-wrap: wrap; gap: 20px; }
+  .tracker-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- PRISM BACKGROUND CANVAS -->
+<canvas id="prism-canvas"></canvas>
+
+<!-- ════════════════════════════════════════════
+     LANDING PAGE
+════════════════════════════════════════════ -->
+<div id="landing-page">
+  <nav>
+    <a class="nav-logo" href="#">persona <span class="dot">◈</span></a>
+    <ul class="nav-links">
+      <li><a onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">How it works</a></li>
+      <li><a onclick="document.getElementById('features-section').scrollIntoView({behavior:'smooth'})">Features</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="nav-login" onclick="openAuth('login')">Log in</button>
+      <button class="nav-cta" onclick="openAuth('register')">Get Started Free</button>
+    </div>
+  </nav>
+
+  <section class="hero" id="home">
+    <div class="hero-badge">Identity-first content engine</div>
+    <h1 class="hero-title">
+      <div class="line"><span class="inner">Content that</span></div>
+      <div class="line"><span class="inner">actually sounds</span></div>
+      <div class="line"><span class="inner accent">like you.</span></div>
+    </h1>
+    <p class="hero-sub">
+      Persona knows your story, domain, and voice — and turns trending topics into
+      LinkedIn posts, Instagram carousels, and Twitter threads that are unmistakably yours.
+    </p>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="openAuth('register')">Build Your Identity →</button>
+      <button class="btn-outline" onclick="demoLogin()">See Demo</button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num">3</div><div class="stat-label">Platforms</div></div>
+      <div class="stat"><div class="stat-num">5</div><div class="stat-label">Free trend sources</div></div>
+      <div class="stat"><div class="stat-num">∞</div><div class="stat-label">Your voice</div></div>
+    </div>
+    <div class="hero-scroll">
+      <div class="scroll-line"></div>
+      <span>scroll</span>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <div class="how reveal" id="how">
+    <div class="section-label">The system</div>
+    <h2 class="section-title">How Persona works</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <span class="step-icon">🧬</span>
+        <h3>Build your identity</h3>
+        <p>Tell Persona who you are — domain, journey, achievements, writing tone. This becomes your permanent content DNA injected into every generation.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <span class="step-icon">📡</span>
+        <h3>Catch live trends</h3>
+        <p>Persona monitors Hacker News, X, Dev.to, and Google News in real time — filtered to your exact niche. No Reddit API needed.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <span class="step-icon">⚡</span>
+        <h3>Generate content</h3>
+        <p>Your identity + a trend topic → platform-native LinkedIn posts, Instagram carousels, and X threads. One click.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <span class="step-icon">📅</span>
+        <h3>Schedule & publish</h3>
+        <p>Auto-distribute across 7 days at optimal times. Instagram direct posting via Graph API included.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="features reveal" id="features-section">
+    <div class="section-label">Why Persona</div>
+    <h2 class="section-title">Built differently</h2>
+    <div class="feature-grid">
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon">🧬</div>
+        <h3>Identity-aware generation</h3>
+        <p>Your background, tone, and achievements are injected as context into every single prompt. The output is irreducibly you.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon">🆓</div>
+        <h3>Zero-cost trend engine</h3>
+        <p>Five free trend sources — HN, Dev.to, X, Google News, Newsdata.io — aggregated, deduplicated, and scored for your domain.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-3">
+        <div class="feature-icon">🎠</div>
+        <h3>Instagram carousels</h3>
+        <p>Puppeteer renders beautiful 1080×1080 slides and publishes via the Instagram Graph API — fully automated.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon">🦙</div>
+        <h3>Local LLM option</h3>
+        <p>Use OpenAI GPT-4o-mini by default, or flip to Ollama for fully local, private generation at zero API cost.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon">🔔</div>
+        <h3>Push + email alerts</h3>
+        <p>Firebase push notifications and Resend email alerts fire when a high-relevance trend hits your niche.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-3">
+        <div class="feature-icon">🗓️</div>
+        <h3>Smart scheduling</h3>
+        <p>Auto-distribute drafts across 7 days at platform-optimal posting windows. Review, approve, done.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" style="margin: 0 48px;">
+
+  <!-- CTA section -->
+  <div style="position:relative;z-index:1;padding:80px 48px;text-align:center;">
+    <div class="section-label" style="display:flex;justify-content:center;">Ready to start?</div>
+    <h2 style="font-family:'Syne',sans-serif;font-size:clamp(28px,4vw,52px);font-weight:800;letter-spacing:-1.5px;margin-bottom:16px;">Your content engine awaits.</h2>
+    <p style="color:var(--muted2);font-size:16px;max-width:420px;margin:0 auto 36px;line-height:1.7;">Register free and start generating content that actually sounds like you in under 5 minutes.</p>
+    <button class="btn-primary" style="font-size:16px;padding:15px 36px;" onclick="openAuth('register')">Create Free Account →</button>
+  </div>
+
+  <footer>
+    <div class="footer-logo">persona <span>◈</span></div>
+    <div>Identity-first AI content engine</div>
+    <div>FastAPI · Supabase · OpenAI / Ollama</div>
+  </footer>
+</div>
+
+<!-- ════════════════════════════════════════════
+     AUTH MODAL
+════════════════════════════════════════════ -->
+<div id="auth-overlay">
+  <div class="auth-modal">
+    <button class="auth-modal-close" onclick="closeAuth()">×</button>
+    <div class="auth-logo">persona <span>◈</span></div>
+    <p class="auth-sub" id="auth-sub-text">Create your account to get started</p>
+    <div class="auth-tabs">
+      <button class="auth-tab" id="tab-register-btn" onclick="setAuthTab('register')">Register</button>
+      <button class="auth-tab" id="tab-login-btn" onclick="setAuthTab('login')">Log In</button>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="register-form" class="auth-form">
+      <input type="text" id="reg-name" placeholder="Full name" autocomplete="name">
+      <input type="email" id="reg-email" placeholder="Email address" autocomplete="email">
+      <input type="password" id="reg-password" placeholder="Password (8+ chars)" autocomplete="new-password">
+      <input type="text" id="reg-domain" placeholder="Your domain / industry (e.g. AI, Marketing)">
+      <button class="auth-submit" onclick="doRegister()">Create Account →</button>
+      <p class="auth-footer">Already have an account? <a onclick="setAuthTab('login')">Log in</a></p>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="login-form" class="auth-form" style="display:none;">
+      <input type="email" id="log-email" placeholder="Email address" autocomplete="email">
+      <input type="password" id="log-password" placeholder="Password" autocomplete="current-password">
+      <button class="auth-submit" onclick="doLogin()">Log In →</button>
+      <p class="auth-footer">No account yet? <a onclick="setAuthTab('register')">Register free</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     DASHBOARD
+════════════════════════════════════════════ -->
+<div id="dashboard-page">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">persona <span class="dot">◈</span></div>
+
+    <div class="sidebar-section-label">Main</div>
+    <nav class="sidebar-nav" id="sidebar-nav">
+      <button class="sidebar-item active" onclick="switchPanel('identity')" data-panel="identity">
+        <span class="s-icon">🧬</span> Identity
+      </button>
+      <button class="sidebar-item" onclick="switchPanel('trends')" data-panel="trends">
+        <span class="s-icon">📡</span> Trends
+      </button>
+      <button class="sidebar-item" onclick="switchPanel('generate')" data-panel="generate">
+        <span class="s-icon">⚡</span> Generate
+      </button>
+      <button class="sidebar-item" onclick="switchPanel('calendar')" data-panel="calendar">
+        <span class="s-icon">📅</span> Calendar
+      </button>
+
+      <div style="height:1px;background:var(--border);margin:12px 0;"></div>
+      <div style="padding:0 12px 6px;font-size:10px;font-family:'Syne',sans-serif;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Analytics</div>
+
+      <button class="sidebar-item" onclick="switchPanel('tracker')" data-panel="tracker">
+        <span class="s-icon">📊</span> Content Tracker
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">A</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebar-name">User</div>
+          <div class="sidebar-user-role" id="sidebar-role">Free plan</div>
+        </div>
+        <button class="sidebar-logout" onclick="doLogout()" title="Log out">⎋</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="dash-main">
+    <div class="dash-topbar">
+      <div class="dash-topbar-title" id="topbar-title">Identity</div>
+      <div class="dash-topbar-right">
+        <div class="topbar-user-badge">
+          <span id="topbar-user-name">User</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-body">
+
+      <!-- ── IDENTITY PANEL ── -->
+      <div class="dash-panel active" id="panel-identity">
+        <div class="panel-header">
+          <div class="section-label">Profile</div>
+          <h2>Your Identity</h2>
+          <p>Your identity is the DNA injected into every content generation.</p>
+        </div>
+
+        <div class="status-bar">
+          <div class="status-dot"></div>
+          <span id="identity-status">Fill your profile and click Save Identity to get started.</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Full name *</label>
+            <input id="f-name" type="text" placeholder="Alex Chen">
+          </div>
+          <div class="form-group">
+            <label>Age</label>
+            <input id="f-age" type="number" placeholder="28" min="16" max="99">
+          </div>
+          <div class="form-group">
+            <label>Domain / Industry *</label>
+            <input id="f-domain" type="text" placeholder="AI / Machine Learning">
+          </div>
+          <div class="form-group">
+            <label>Current role</label>
+            <input id="f-role" type="text" placeholder="ML Engineer @ Startup">
+          </div>
+          <div class="form-group">
+            <label>Qualification</label>
+            <input id="f-qual" type="text" placeholder="M.S. Computer Science, Stanford">
+          </div>
+          <div class="form-group">
+            <label>Interests</label>
+            <input id="f-interests" type="text" placeholder="LLMs, distributed systems, hiking">
+          </div>
+          <div class="form-group">
+            <label>Hobbies</label>
+            <input id="f-hobbies" type="text" placeholder="Photography, chess, trail running">
+          </div>
+          <div class="form-group">
+            <label>Key achievements</label>
+            <input id="f-achieve" type="text" placeholder="Built ML infra serving 10M+ users">
+          </div>
+          <div class="form-group full">
+            <label>Your journey / story</label>
+            <textarea id="f-journey" placeholder="Started as a backend dev in 2016, fell in love with ML during a side project building a recommendation engine. Transitioned to AI full-time after my research got accepted at NeurIPS..."></textarea>
+          </div>
+          <div class="form-group full">
+            <label>Writing tone (select all that apply)</label>
+            <div class="tone-pills" id="tone-pills">
+              <div class="tone-pill" onclick="togglePill(this)">Bold</div>
+              <div class="tone-pill" onclick="togglePill(this)">Analytical</div>
+              <div class="tone-pill" onclick="togglePill(this)">Inspirational</div>
+              <div class="tone-pill" onclick="togglePill(this)">Conversational</div>
+              <div class="tone-pill" onclick="togglePill(this)">Humorous</div>
+              <div class="tone-pill" onclick="togglePill(this)">Technical</div>
+              <div class="tone-pill" onclick="togglePill(this)">Storytelling</div>
+              <div class="tone-pill" onclick="togglePill(this)">Contrarian</div>
+              <div class="tone-pill" onclick="togglePill(this)">Educational</div>
+              <div class="tone-pill" onclick="togglePill(this)">Motivational</div>
+            </div>
+          </div>
+          <div class="form-group full">
+            <label>Active platforms</label>
+            <div class="tone-pills" id="platform-pills">
+              <div class="tone-pill" onclick="togglePill(this)" data-val="linkedin">LinkedIn</div>
+              <div class="tone-pill" onclick="togglePill(this)" data-val="instagram">Instagram</div>
+              <div class="tone-pill" onclick="togglePill(this)" data-val="twitter">Twitter / X</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:12px; margin-top:28px; flex-wrap:wrap;">
+          <button class="btn-primary" onclick="saveIdentity()">Save Identity</button>
+          <button class="btn-outline" onclick="loadIdentity()">Load Saved</button>
+          <button class="btn-outline" onclick="loadDemoIdentity()" style="color:var(--muted2);">Load Demo</button>
+        </div>
+      </div>
+
+      <!-- ── TRENDS PANEL ── -->
+      <div class="dash-panel" id="panel-trends">
+        <div class="panel-actions">
+          <div>
+            <div class="section-label">Live data</div>
+            <h2 style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;letter-spacing:-.5px;">Trending in your niche</h2>
+            <p style="font-size:14px;color:var(--muted2);margin-top:6px;">Sources: Hacker News · Dev.to · X / Twitter · Google News · Newsdata.io</p>
+          </div>
+          <button class="btn-primary" onclick="fetchTrends()">Refresh Trends</button>
+        </div>
+        <div id="trends-list">
+          <div class="loading"><div class="spinner"></div> Click "Refresh Trends" to fetch live data for your domain</div>
+        </div>
+      </div>
+
+      <!-- ── GENERATE PANEL ── -->
+      <div class="dash-panel" id="panel-generate">
+        <div class="panel-header">
+          <div class="section-label">AI engine</div>
+          <h2>Generate Content</h2>
+        </div>
+
+        <div class="gen-controls">
+          <div class="form-group">
+            <label>Topic or idea</label>
+            <input id="g-topic" type="text" placeholder="Why LLMs will replace traditional search engines">
+          </div>
+          <div class="form-group">
+            <label>Platform</label>
+            <select id="g-platform">
+              <option value="linkedin">LinkedIn</option>
+              <option value="instagram">Instagram Carousel</option>
+              <option value="twitter">Twitter / X Thread</option>
+              <option value="all">All Platforms</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Content type</label>
+            <select id="g-type">
+              <option value="post">Standard post</option>
+              <option value="story">Personal story</option>
+              <option value="opinion">Hot take / Opinion</option>
+              <option value="educational">Educational</option>
+              <option value="thread">Thread / Carousel</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:28px;">
+          <button class="btn-primary" onclick="generateContent()">Generate</button>
+          <button class="btn-outline" onclick="loadDrafts()">Load Existing Drafts</button>
+        </div>
+
+        <div id="drafts-container">
+          <div class="loading">
+            <div class="spinner"></div> Enter a topic and click Generate, or load your existing drafts.
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CALENDAR PANEL ── -->
+      <div class="dash-panel" id="panel-calendar">
+        <div class="panel-actions">
+          <div>
+            <div class="section-label">Schedule</div>
+            <h2 style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;letter-spacing:-.5px;">7-day content calendar</h2>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn-outline" onclick="createWeekPlan()">Auto-plan Week</button>
+            <button class="btn-primary" onclick="loadCalendar()">Refresh</button>
+          </div>
+        </div>
+
+        <div class="cal-header">
+          <div class="cal-header-day">Mon</div><div class="cal-header-day">Tue</div>
+          <div class="cal-header-day">Wed</div><div class="cal-header-day">Thu</div>
+          <div class="cal-header-day">Fri</div><div class="cal-header-day">Sat</div>
+          <div class="cal-header-day">Sun</div>
+        </div>
+        <div class="cal-grid" id="cal-grid">
+          <div class="loading" style="grid-column:1/-1">
+            <div class="spinner"></div> Click Refresh to load your schedule
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TRACKER PANEL ── -->
+      <div class="dash-panel" id="panel-tracker">
+        <div class="panel-header">
+          <div class="section-label">Analytics</div>
+          <h2>Content Tracker</h2>
+          <p>Track your generation activity and performance across all platforms.</p>
+        </div>
+
+        <!-- Stats cards -->
+        <div class="tracker-grid">
+          <div class="tracker-card">
+            <div class="tracker-card-label">Total Generated</div>
+            <div class="tracker-card-val" id="stat-total">0</div>
+            <div class="tracker-card-sub">pieces of content</div>
+            <div class="tracker-card-delta up" id="stat-total-delta">↑ 0 this week</div>
+          </div>
+          <div class="tracker-card">
+            <div class="tracker-card-label">Approved</div>
+            <div class="tracker-card-val" id="stat-approved">0</div>
+            <div class="tracker-card-sub">drafts approved</div>
+            <div class="tracker-card-delta up" id="stat-approved-delta">↑ 0 this week</div>
+          </div>
+          <div class="tracker-card">
+            <div class="tracker-card-label">Scheduled</div>
+            <div class="tracker-card-val" id="stat-scheduled">0</div>
+            <div class="tracker-card-sub">posts in queue</div>
+            <div class="tracker-card-delta up">↑ ready to publish</div>
+          </div>
+          <div class="tracker-card">
+            <div class="tracker-card-label">Approval Rate</div>
+            <div class="tracker-card-val" id="stat-rate">—</div>
+            <div class="tracker-card-sub">of drafts approved</div>
+            <div class="tracker-card-delta" id="stat-rate-color">of all drafts</div>
+          </div>
+        </div>
+
+        <!-- Bar chart -->
+        <div class="chart-wrap">
+          <div class="chart-title">
+            Content Generated — Last 8 Weeks
+            <div class="chart-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#7c6cff;"></div>LinkedIn</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#e1306c;"></div>Instagram</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#9ca3af;"></div>Twitter</div>
+            </div>
+          </div>
+          <div class="bar-chart" id="bar-chart"></div>
+        </div>
+
+        <!-- Platform breakdown -->
+        <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:.3px;margin-bottom:14px;color:var(--muted2);">Platform Breakdown</div>
+        <div class="platform-breakdown">
+          <div class="platform-card">
+            <div class="platform-icon-wrap linkedin">💼</div>
+            <div>
+              <div class="platform-stat-label">LinkedIn</div>
+              <div class="platform-stat-val" id="pb-linkedin">0</div>
+              <div style="font-size:12px;color:var(--muted2);">posts generated</div>
+            </div>
+          </div>
+          <div class="platform-card">
+            <div class="platform-icon-wrap instagram">📸</div>
+            <div>
+              <div class="platform-stat-label">Instagram</div>
+              <div class="platform-stat-val" id="pb-instagram">0</div>
+              <div style="font-size:12px;color:var(--muted2);">carousels generated</div>
+            </div>
+          </div>
+          <div class="platform-card">
+            <div class="platform-icon-wrap twitter">🐦</div>
+            <div>
+              <div class="platform-stat-label">Twitter / X</div>
+              <div class="platform-stat-val" id="pb-twitter">0</div>
+              <div style="font-size:12px;color:var(--muted2);">threads generated</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /dash-body -->
+  </div><!-- /dash-main -->
+</div><!-- /dashboard-page -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ────────────────────────────────────────────
+   CONFIG
+──────────────────────────────────────────── */
+const API     = 'http://localhost:8000';
+let USER_ID   = 'user_demo_001';
+let currentUser = null;
+
+/* ────────────────────────────────────────────
+   PRISM WEBGL BACKGROUND
+──────────────────────────────────────────── */
+(function initPrism() {
+  const canvas = document.getElementById('prism-canvas');
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if (!gl) return;
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  const VS = `attribute vec2 position; void main() { gl_Position = vec4(position, 0.0, 1.0); }`;
+  const FS = `
+    precision mediump float;
+    uniform vec2  iResolution;
+    uniform float iTime;
+    vec4 tanh4(vec4 x) {
+      vec4 e = exp(clamp(2.0*x, -10.0, 10.0));
+      return (e - 1.0) / (e + 1.0);
+    }
+    float rand(vec2 c) { return fract(sin(dot(c, vec2(12.9898, 78.233))) * 43758.5453); }
+    void main() {
+      vec2 f = (gl_FragCoord.xy - 0.5 * iResolution) / iResolution.y * 2.4;
+      float t   = iTime * 0.22;
+      float c0  = cos(t), c1 = cos(t + 33.0), c2 = cos(t + 11.0);
+      mat2  wob = mat2(c0, c1, c2, c0);
+      float z = 5.0; vec4 o = vec4(0.0);
+      for (int i = 0; i < 80; i++) {
+        vec3 p  = vec3(f, z);
+        p.xz    = p.xz * wob;
+        float m  = abs(p.x) * 0.38 + abs(p.y) * 0.52 + abs(p.z) * 0.38 - 1.0;
+        float d  = 0.12 + 0.22 * abs(m * 1.1);
+        z       -= d;
+        o += (sin((p.y + z) * 1.1 + vec4(0.0, 1.0, 2.0, 3.0)) + 1.0) / d;
+      }
+      o = tanh4(o * o * 0.000018);
+      vec3 col = o.rgb;
+      float n  = rand(gl_FragCoord.xy + iTime) * 0.035;
+      col      = col * 0.55 + n;
+      col      = mix(col, col * vec3(0.60, 0.52, 1.0), 0.42);
+      col      = clamp(col, 0.0, 1.0);
+      gl_FragColor = vec4(col, 0.92);
+    }
+  `;
+
+  function compileShader(src, type) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s); return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, compileShader(VS, gl.VERTEX_SHADER));
+  gl.attachShader(prog, compileShader(FS, gl.FRAGMENT_SHADER));
+  gl.linkProgram(prog); gl.useProgram(prog);
+
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, 'position');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+  const uRes  = gl.getUniformLocation(prog, 'iResolution');
+  const uTime = gl.getUniformLocation(prog, 'iTime');
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+  let t0 = null;
+  function render(ts) {
+    if (!t0) t0 = ts;
+    gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.uniform1f(uTime, (ts - t0) / 1000);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
+})();
+
+/* ────────────────────────────────────────────
+   SCROLL REVEAL
+──────────────────────────────────────────── */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add('visible');
+    io.unobserve(e.target);
+  });
+}, { threshold: 0.08, rootMargin: '-40px' });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* ────────────────────────────────────────────
+   AUTH MODAL
+──────────────────────────────────────────── */
+function openAuth(tab = 'register') {
+  document.getElementById('auth-overlay').classList.add('open');
+  setAuthTab(tab);
+}
+function closeAuth() {
+  document.getElementById('auth-overlay').classList.remove('open');
+}
+function setAuthTab(tab) {
+  const isReg = tab === 'register';
+  document.getElementById('tab-register-btn').classList.toggle('active', isReg);
+  document.getElementById('tab-login-btn').classList.toggle('active', !isReg);
+  document.getElementById('register-form').style.display = isReg ? 'flex' : 'none';
+  document.getElementById('login-form').style.display = isReg ? 'none' : 'flex';
+  document.getElementById('auth-sub-text').textContent = isReg
+    ? 'Create your account to get started'
+    : 'Welcome back to Persona';
+}
+document.getElementById('auth-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeAuth();
+});
+
+function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-password').value;
+  const domain = document.getElementById('reg-domain').value.trim();
+
+  if (!name || !email || !pass) { showToast('⚠️ Please fill in all required fields'); return; }
+  if (pass.length < 8) { showToast('⚠️ Password must be at least 8 characters'); return; }
+
+  // Simulate registration (in production, call your API)
+  currentUser = { name, email, domain, userId: 'user_' + Date.now() };
+  USER_ID = currentUser.userId;
+  closeAuth();
+  enterDashboard(currentUser);
+  showToast(`✅ Welcome to Persona, ${name.split(' ')[0]}!`);
+}
+
+function doLogin() {
+  const email = document.getElementById('log-email').value.trim();
+  const pass = document.getElementById('log-password').value;
+  if (!email || !pass) { showToast('⚠️ Enter email and password'); return; }
+
+  // Simulate login
+  const name = email.split('@')[0];
+  currentUser = { name, email, userId: 'user_demo_001' };
+  USER_ID = currentUser.userId;
+  closeAuth();
+  enterDashboard(currentUser);
+  showToast(`✅ Logged in as ${name}`);
+}
+
+function demoLogin() {
+  currentUser = { name: 'Alex Chen', email: 'alex@example.com', domain: 'AI / ML', userId: 'user_demo_001' };
+  USER_ID = 'user_demo_001';
+  enterDashboard(currentUser);
+  loadDemoIdentity();
+  showToast('🚀 Demo loaded — explore all features!');
+}
+
+function enterDashboard(user) {
+  // Update sidebar user info
+  const initials = user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  document.getElementById('sidebar-avatar').textContent = initials;
+  document.getElementById('sidebar-name').textContent = user.name;
+  document.getElementById('sidebar-role').textContent = user.domain || 'Content Creator';
+  document.getElementById('topbar-user-name').textContent = user.name.split(' ')[0];
+
+  // Switch views
+  document.getElementById('landing-page').style.display = 'none';
+  document.getElementById('dashboard-page').classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  // Load tracker data
+  refreshTrackerData();
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('landing-page').style.display = 'block';
+  document.getElementById('dashboard-page').classList.remove('active');
+  document.body.style.overflow = '';
+  showToast('👋 Logged out successfully');
+}
+
+/* ────────────────────────────────────────────
+   DASHBOARD NAVIGATION
+──────────────────────────────────────────── */
+const panelTitles = {
+  identity: 'Identity',
+  trends: 'Trends',
+  generate: 'Generate',
+  calendar: 'Calendar',
+  tracker: 'Content Tracker'
+};
+
+function switchPanel(name) {
+  document.querySelectorAll('.sidebar-item').forEach(b => {
+    b.classList.toggle('active', b.dataset.panel === name);
+  });
+  document.querySelectorAll('.dash-panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'panel-' + name);
+  });
+  document.getElementById('topbar-title').textContent = panelTitles[name] || name;
+  if (name === 'tracker') refreshTrackerData();
+}
+
+/* ────────────────────────────────────────────
+   TOAST
+──────────────────────────────────────────── */
+let toastTimer = null;
+function showToast(msg, duration = 3200) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), duration);
+}
+
+/* ────────────────────────────────────────────
+   PILL TOGGLE
+──────────────────────────────────────────── */
+function togglePill(el) { el.classList.toggle('active'); }
+
+function getActivePills(containerId) {
+  return [...document.querySelectorAll(`#${containerId} .tone-pill.active`)]
+    .map(e => (e.dataset.val || e.textContent).trim());
+}
+
+/* ────────────────────────────────────────────
+   IDENTITY
+──────────────────────────────────────────── */
+async function saveIdentity() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { showToast('⚠️ Please enter your name'); return; }
+
+  const payload = {
+    user_id: USER_ID, name,
+    age: parseInt(document.getElementById('f-age').value) || null,
+    domain: document.getElementById('f-domain').value,
+    role: document.getElementById('f-role').value,
+    qualification: document.getElementById('f-qual').value,
+    interests: document.getElementById('f-interests').value,
+    hobbies: document.getElementById('f-hobbies').value,
+    achievements: document.getElementById('f-achieve').value,
+    journey: document.getElementById('f-journey').value,
+    tones: getActivePills('tone-pills'),
+    platforms: getActivePills('platform-pills'),
+  };
+
+  setStatus('Saving…');
+  try {
+    const r = await fetch(`${API}/api/identity/save`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    setStatus(`✓ Identity saved for ${name}`);
+    showToast(`✅ Identity saved!`);
+  } catch {
+    setStatus('Could not connect to backend — is it running on :8000?');
+    showToast('❌ Backend not reachable');
+  }
+}
+
+async function loadIdentity() {
+  setStatus('Loading…');
+  try {
+    const r = await fetch(`${API}/api/identity/${USER_ID}`);
+    if (!r.ok) { showToast('No identity found — save one first'); return; }
+    const d = await r.json();
+    fillIdentityForm(d);
+    setStatus(`✓ Loaded identity for ${d.name}`);
+    showToast(`✅ Loaded: ${d.name}`);
+  } catch {
+    showToast('❌ Backend not reachable');
+    setStatus('Could not connect to backend');
+  }
+}
+
+function fillIdentityForm(d) {
+  document.getElementById('f-name').value      = d.name || '';
+  document.getElementById('f-age').value       = d.age || '';
+  document.getElementById('f-domain').value    = d.domain || '';
+  document.getElementById('f-role').value      = d.role || '';
+  document.getElementById('f-qual').value      = d.qualification || '';
+  document.getElementById('f-interests').value = d.interests || '';
+  document.getElementById('f-hobbies').value   = d.hobbies || '';
+  document.getElementById('f-achieve').value   = d.achievements || '';
+  document.getElementById('f-journey').value   = d.journey || '';
+  document.querySelectorAll('#tone-pills .tone-pill').forEach(p => {
+    p.classList.toggle('active', (d.tones || []).includes(p.textContent.trim()));
+  });
+  document.querySelectorAll('#platform-pills .tone-pill').forEach(p => {
+    p.classList.toggle('active', (d.platforms || []).includes(p.dataset.val));
+  });
+}
+
+function loadDemoIdentity() {
+  fillIdentityForm({
+    name: 'Alex Chen', age: 28, domain: 'AI / Machine Learning',
+    role: 'ML Engineer @ AI Startup',
+    qualification: 'M.S. Computer Science, Stanford',
+    interests: 'LLMs, distributed systems, open source AI',
+    hobbies: 'Photography, trail running, chess',
+    achievements: 'Built ML infra serving 10M+ users · 3 OSS repos with 4k+ stars',
+    journey: `Started as a backend dev in 2016. Fell in love with ML while building a recommendation engine for a side project. Transitioned to AI full-time after getting a paper accepted at NeurIPS. Now building the infra that makes LLMs fast.`,
+    tones: ['Bold', 'Technical', 'Analytical'],
+    platforms: ['linkedin', 'twitter'],
+  });
+  showToast('Demo identity loaded → click Save Identity!');
+}
+
+function setStatus(msg) {
+  document.getElementById('identity-status').textContent = msg;
+}
+
+/* ────────────────────────────────────────────
+   TRENDS
+──────────────────────────────────────────── */
+async function fetchTrends() {
+  const el = document.getElementById('trends-list');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div> Fetching live trends for your domain…</div>';
+  try {
+    const r = await fetch(`${API}/api/trends/${USER_ID}`);
+    const d = await r.json();
+    if (!d.trends || !d.trends.length) {
+      el.innerHTML = '<div class="loading">No trends found — make sure your identity is saved.</div>';
+      return;
+    }
+    el.innerHTML = d.trends.map(t => `
+      <div class="trend-item">
+        <div class="trend-source">${escHtml(t.source)}</div>
+        <div class="trend-title">${escHtml(t.title)}</div>
+        <div class="trend-score">${Math.round((t.relevance_score || 0) * 100)}%</div>
+        <button class="use-trend-btn" onclick="useTrend(this.dataset.title)" data-title="${escAttr(t.title)}">Use →</button>
+      </div>
+    `).join('');
+    showToast(`✅ ${d.count} trends loaded`);
+  } catch {
+    el.innerHTML = '<div class="loading">❌ Backend not reachable — is it running on :8000?</div>';
+  }
+}
+
+function useTrend(title) {
+  document.getElementById('g-topic').value = title;
+  switchPanel('generate');
+  showToast('Topic loaded → hit Generate ⚡');
+}
+
+/* ────────────────────────────────────────────
+   GENERATE
+──────────────────────────────────────────── */
+async function generateContent() {
+  const topic = document.getElementById('g-topic').value.trim();
+  if (!topic) { showToast('⚠️  Enter a topic first'); return; }
+
+  const container = document.getElementById('drafts-container');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div> Generating with your identity context…</div>';
+
+  try {
+    const r = await fetch(`${API}/api/generate/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: USER_ID, topic,
+        platform: document.getElementById('g-platform').value,
+        content_type: document.getElementById('g-type').value,
+      }),
+    });
+    if (!r.ok) {
+      const err = await r.json();
+      showToast(`❌ ${err.detail || 'Generation failed'}`);
+      container.innerHTML = `<div class="loading">❌ ${escHtml(err.detail || 'Generation failed')}</div>`;
+      return;
+    }
+    const data = await r.json();
+    renderDrafts(data);
+    showToast(`✅ Generated ${data.length} draft(s)`);
+  } catch {
+    container.innerHTML = '<div class="loading">❌ Backend not reachable — is it running on :8000?</div>';
+  }
+}
+
+async function loadDrafts() {
+  const container = document.getElementById('drafts-container');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div> Loading drafts…</div>';
+  try {
+    const r = await fetch(`${API}/api/generate/drafts/${USER_ID}`);
+    const data = await r.json();
+    renderDrafts(data);
+  } catch {
+    container.innerHTML = '<div class="loading">❌ Backend not reachable</div>';
+  }
+}
+
+function renderDrafts(drafts) {
+  const container = document.getElementById('drafts-container');
+  if (!drafts.length) {
+    container.innerHTML = '<div class="loading">No drafts yet — generate some content above!</div>';
+    return;
+  }
+  container.innerHTML = '<div class="drafts-grid">' + drafts.map(d => {
+    const id = d.id || d.draft_id || '';
+    const slides = Array.isArray(d.carousel_slides) ? d.carousel_slides : [];
+    const statusBadge = d.status && d.status !== 'draft'
+      ? `<span class="draft-status-badge ${escAttr(d.status)}">${d.status}</span>` : '';
+    const carouselHtml = slides.length
+      ? `<div class="carousel-preview">${slides.slice(0,6).map(s => `
+          <div class="carousel-slide">
+            <div class="slide-emoji">${s.emoji || '✨'}</div>
+            <div class="slide-title">${escHtml((s.title||'').substring(0,40))}</div>
+            <div class="slide-body">${escHtml((s.body||'').substring(0,60))}…</div>
+          </div>`).join('')}</div>` : '';
+    return `
+      <div class="draft-card">
+        <div><span class="draft-platform">${escHtml(d.platform || '')}</span>${statusBadge}</div>
+        <div class="draft-topic">${escHtml(d.topic || '')}</div>
+        ${carouselHtml}
+        <div class="draft-content">${escHtml(d.content || '')}</div>
+        <div class="draft-actions">
+          <button class="btn-approve btn-sm" onclick="approveDraft('${id}')">✓ Approve</button>
+          <button class="btn-delete btn-sm" onclick="deleteDraft('${id}')">✕ Delete</button>
+          <button class="btn-schedule btn-sm" onclick="schedulePost('${id}', '${escAttr(d.platform || '')}')">📅 Schedule</button>
+          ${d.platform === 'instagram' ? `<button class="btn-outline btn-sm" onclick="publishInstagram('${id}')">Publish IG</button>` : ''}
+        </div>
+      </div>`;
+  }).join('') + '</div>';
+}
+
+async function approveDraft(id) {
+  try {
+    const r = await fetch(`${API}/api/generate/approve/${id}`, { method: 'PATCH' });
+    if (!r.ok) throw new Error();
+    showToast('✅ Draft approved!'); loadDrafts();
+  } catch { showToast('❌ Error approving draft'); }
+}
+
+async function deleteDraft(id) {
+  try {
+    await fetch(`${API}/api/generate/draft/${id}`, { method: 'DELETE' });
+    showToast('🗑  Draft deleted'); loadDrafts();
+  } catch { showToast('❌ Error deleting draft'); }
+}
+
+async function schedulePost(draftId, platform) {
+  const optimalHours = { linkedin: 8, instagram: 10, twitter: 9 };
+  const dt = new Date();
+  dt.setDate(dt.getDate() + 1);
+  dt.setHours(optimalHours[platform] || 9, 30, 0, 0);
+  const iso = dt.toISOString().slice(0, 19);
+  try {
+    const r = await fetch(`${API}/api/schedule/queue`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: USER_ID, draft_id: draftId, scheduled_for: iso }),
+    });
+    if (!r.ok) throw new Error();
+    showToast(`📅 Scheduled for ${dt.toLocaleDateString()} at ${dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`);
+    switchPanel('calendar'); loadCalendar();
+  } catch { showToast('❌ Error scheduling post'); }
+}
+
+async function publishInstagram(draftId) {
+  showToast('📤 Publishing to Instagram…');
+  try {
+    const r = await fetch(`${API}/api/schedule/publish-instagram/${draftId}`, { method: 'POST' });
+    const d = await r.json();
+    d.success ? showToast(`✅ Posted! IG ID: ${d.instagram_post_id}`) : showToast('❌ Instagram publishing failed');
+  } catch { showToast('❌ Instagram not configured — check .env'); }
+}
+
+/* ────────────────────────────────────────────
+   CALENDAR
+──────────────────────────────────────────── */
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+async function loadCalendar() {
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '<div class="loading" style="grid-column:1/-1"><div class="spinner"></div> Loading schedule…</div>';
+
+  const today = new Date(); let posts = [];
+  try {
+    const r = await fetch(`${API}/api/schedule/upcoming/${USER_ID}`);
+    posts = await r.json();
+  } catch { showToast('❌ Backend not reachable — showing empty calendar'); }
+
+  const byDate = {};
+  posts.forEach(p => {
+    const key = new Date(p.scheduled_for).toDateString();
+    if (!byDate[key]) byDate[key] = [];
+    byDate[key].push(p);
+  });
+
+  const monday = new Date(today);
+  const dow = today.getDay();
+  monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+
+  grid.innerHTML = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const key = d.toDateString(); const dayPosts = byDate[key] || [];
+    const isToday = d.toDateString() === today.toDateString();
+    return `
+      <div class="cal-day${isToday ? ' today' : ''}">
+        <div class="cal-day-label">${DAY_LABELS[i]} ${d.getDate()}</div>
+        ${dayPosts.length
+          ? dayPosts.map(p => `
+              <div class="cal-post">
+                <div class="cal-post-platform">${(p.platform||'').toUpperCase()}</div>
+                <div class="cal-post-time">${new Date(p.scheduled_for).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+              </div>`).join('')
+          : `<div class="cal-empty">—</div>`}
+      </div>`;
+  }).join('');
+}
+
+async function createWeekPlan() {
+  try {
+    const r = await fetch(`${API}/api/generate/drafts/${USER_ID}?status=approved`);
+    const drafts = await r.json();
+    if (!drafts.length) { showToast('⚠️ No approved drafts — approve some drafts first'); return; }
+    showToast('📅 Creating week plan…');
+    const r2 = await fetch(`${API}/api/schedule/week-plan`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: USER_ID, approved_draft_ids: drafts.map(d => d.id) }),
+    });
+    const data = await r2.json();
+    showToast(`✅ Week plan created — ${data.schedule.length} posts scheduled!`);
+    loadCalendar();
+  } catch { showToast('❌ Error creating week plan'); }
+}
+
+/* ────────────────────────────────────────────
+   CONTENT TRACKER
+──────────────────────────────────────────── */
+// Generate realistic mock data for tracker (in production, pull from your API)
+function generateMockWeeklyData() {
+  const weeks = [];
+  const now = new Date();
+  for (let i = 7; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i * 7);
+    const label = `W${8-i}`;
+    weeks.push({
+      label,
+      linkedin:  Math.floor(Math.random() * 8 + 2),
+      instagram: Math.floor(Math.random() * 5 + 1),
+      twitter:   Math.floor(Math.random() * 6 + 1),
+    });
+  }
+  return weeks;
+}
+
+function refreshTrackerData() {
+  const data = generateMockWeeklyData();
+  const totals = data.reduce((acc, w) => ({
+    linkedin: acc.linkedin + w.linkedin,
+    instagram: acc.instagram + w.instagram,
+    twitter: acc.twitter + w.twitter,
+  }), { linkedin: 0, instagram: 0, twitter: 0 });
+
+  const total = totals.linkedin + totals.instagram + totals.twitter;
+  const approved = Math.floor(total * 0.65);
+  const scheduled = Math.floor(total * 0.28);
+  const lastWeek = data[data.length - 1];
+  const thisWeekTotal = lastWeek.linkedin + lastWeek.instagram + lastWeek.twitter;
+
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-total-delta').textContent = `↑ ${thisWeekTotal} this week`;
+  document.getElementById('stat-approved').textContent = approved;
+  document.getElementById('stat-approved-delta').textContent = `↑ ${Math.floor(thisWeekTotal * 0.65)} this week`;
+  document.getElementById('stat-scheduled').textContent = scheduled;
+  const rate = total > 0 ? Math.round((approved / total) * 100) : 0;
+  document.getElementById('stat-rate').textContent = rate + '%';
+  document.getElementById('stat-rate-color').textContent = `of all ${total} drafts`;
+
+  document.getElementById('pb-linkedin').textContent = totals.linkedin;
+  document.getElementById('pb-instagram').textContent = totals.instagram;
+  document.getElementById('pb-twitter').textContent = totals.twitter;
+
+  renderBarChart(data);
+}
+
+function renderBarChart(data) {
+  const chart = document.getElementById('bar-chart');
+  const maxVal = Math.max(...data.map(w => w.linkedin + w.instagram + w.twitter));
+
+  chart.innerHTML = data.map(week => {
+    const total = week.linkedin + week.instagram + week.twitter;
+    const pct = maxVal > 0 ? (total / maxVal) : 0;
+    const chartH = 168; // px available height
+
+    const liH  = Math.max(2, Math.round((week.linkedin  / Math.max(total, 1)) * pct * chartH));
+    const igH  = Math.max(2, Math.round((week.instagram / Math.max(total, 1)) * pct * chartH));
+    const twH  = Math.max(2, Math.round((week.twitter   / Math.max(total, 1)) * pct * chartH));
+
+    return `
+      <div class="bar-group">
+        <div class="bar-val">${total}</div>
+        <div class="bar-stack" style="height:${pct * chartH}px;">
+          <div class="bar-seg" style="height:${liH}px;background:#7c6cff;border-radius:3px 3px 0 0;" title="LinkedIn: ${week.linkedin}"></div>
+          <div class="bar-seg" style="height:${igH}px;background:#e1306c;" title="Instagram: ${week.instagram}"></div>
+          <div class="bar-seg" style="height:${twH}px;background:#9ca3af;" title="Twitter: ${week.twitter}"></div>
+        </div>
+        <div class="bar-label">${week.label}</div>
+      </div>`;
+  }).join('');
+}
+
+/* ────────────────────────────────────────────
+   UTILS
+──────────────────────────────────────────── */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+</script>
+</body>
+</html>
