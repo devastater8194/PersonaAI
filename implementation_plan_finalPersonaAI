@@ -1,0 +1,47 @@
+# Goal Description
+
+1. **Fix Generate Error:** The generation feature fails with an error that the user interprets as "openai tokens exhausted". We will update the backend's error handling to catch Gemini `ResourceExhausted` errors with a clearer message, and update the UI in `GenerateView.jsx` to correctly show Gemini (removing the old OpenAI dropdown) to avoid confusion.
+2. **Detailed Trends Search & Summary:** Add a search bar to `TrendsView.jsx` where users can type a specific topic. The fetched articles will turn into clickable links opening in a new tab. We will add a "Generate Summary" button that calls a new backend endpoint to summarize the article's contents using `Gemini 2.0 Flash`.
+3. **AI-Generated Live Graph:** When a user searches for a trend, we will use Gemini to synthesize a 7-day trend heat graph based on the fetched live context. We will display this live graph in the frontend above the trend cards using a chart library (like Recharts if available, or a custom visualizer using Tailwind).
+
+## User Review Required
+
+- Is a basic custom Tailwind-based bar/line chart acceptable for the live graph, or does the project already have a specific charting library installed (like `recharts` or `chart.js`)? I will use simple HTML/Tailwind styling for the chart to avoid adding heavy dependencies unless you prefer a dedicated library.
+- The summary generation requires us to scrape the target article URL on the backend to feed it to Gemini. Some sites (like Twitter or strict news outlets) may block simple scraping. It will do its best to read the text.
+
+## Proposed Changes
+
+### Backend APIs
+
+#### [MODIFY] [trends.py](file:///c:/Users/ASUS/OneDrive/Desktop/persona%20AI/trends.py)
+- Add API route `/api/trends/search` that takes `topic` as a query param.
+- Add API route `/api/trends/summary` that accepts an article URL/text and calls a new `generate_trend_summary` function.
+- Add API route `/api/trends/graph` that prompts Gemini with the list of trending articles and asks it to estimate 7-day historical relevancy data (returning JSON) to plot.
+
+#### [MODIFY] [trends_service.py](file:///c:/Users/ASUS/OneDrive/Desktop/persona%20AI/trends_service.py)
+- Add `generate_trend_summary(url/title, topic)` logic using `google.generativeai`.
+- Add `generate_trend_graph_data(trends, topic)` logic that asks Gemini to construct the JSON graph.
+
+#### [MODIFY] [llm_service.py](file:///c:/Users/ASUS/OneDrive/Desktop/persona%20AI/llm_service.py)
+- Catch `ResourceExhausted` and provide a clean "Gemini Token Quota Reached. Please configure billing or try later." error.
+
+### Frontend Flow
+
+#### [MODIFY] [GenerateView.jsx](file:///c:/Users/ASUS/OneDrive/Desktop/persona%20AI/frontend/app/dashboard/views/GenerateView.jsx)
+- Replace "OpenAI — gpt-4o-mini" dropdown with "Gemini 2.0 Flash".
+- Adjust error display formatting.
+
+#### [MODIFY] [TrendsView.jsx](file:///c:/Users/ASUS/OneDrive/Desktop/persona%20AI/frontend/app/dashboard/views/TrendsView.jsx)
+- Add a text input for Topic search and wire it up to `handleFetch(topic)`.
+- Reformat the trends list so that cards have a "Generate Summary" button on the bottom right.
+- Build a section at the top of the View to render the AI-generated live graph (via the new `/api/trends/graph` endpoint).
+
+## Open Questions
+
+- Should the "click open inside the website" open directly in a popup modal, or just a new browser tab (`target="_blank"`)? A new tab is generally cleaner for external news articles.
+
+## Verification Plan
+### Manual Verification
+- Test generating a trend summary to ensure valid pointwise markdown is returned.
+- Observe the Live Graph dynamically rendering.
+- Verify that generation in Phase 2B shows "Gemini" and gracefully handles API errors.
